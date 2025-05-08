@@ -1,6 +1,7 @@
 import { showFormattedDate } from "../../utils";
 import HomePresenter from "../../presenters/home-presenter.js";
 import NotificationButton from "./index.js"; // tombol notifikasi
+import { StoryDB } from "../../utils/indexedDB.js"; // hapus IndexedDB
 
 export default class HomePage {
   async render() {
@@ -8,8 +9,6 @@ export default class HomePage {
 
     return `
       <section class="container">
-       
-        
         ${!isAuthenticated ? `
           <div class="welcome-section">
             <div class="welcome-content">
@@ -23,7 +22,9 @@ export default class HomePage {
           </div>
         ` : `
           <div class="story-container">
-            ${NotificationButton.render()} <!-- ⬅️ tombol notifikasi -->
+            ${NotificationButton.render()}
+            <button id="clear-indexeddb" class="btn btn-danger">Hapus Story Lokal</button>
+
             <h2>Stories</h2>
             <div id="story-list" class="story-list">
               <p id="loading">Loading stories...</p>
@@ -44,7 +45,8 @@ export default class HomePage {
 
     if (isAuthenticated) {
       await this._loadStories();
-      NotificationButton.afterRender(); // ⬅️ aktifkan notifikasi
+      NotificationButton.afterRender(); // aktifkan notifikasi
+      this._setupClearButton(); // hapus IndexedDB
       await this._initMap();
     }
   }
@@ -84,29 +86,28 @@ export default class HomePage {
       });
     });
   }
+
   async _initMap() {
     const mapElement = document.getElementById("map");
-  
-    // ✅ FIX: Hapus isi container map biar bisa di-reinit
-    mapElement.innerHTML = ''; // ⬅️ tambahkan ini untuk mencegah double init
-  
+    mapElement.innerHTML = ''; // cegah init ganda
+
     const token = localStorage.getItem('token');
     if (!token) {
       window.location.hash = '#/login';
       return;
     }
-  
+
     const { error, stories } = await HomePresenter.getEnrichedStories(token);
     if (error || stories.length === 0) {
       mapElement.innerHTML = '<p class="map-message">No story locations available</p>';
       return;
     }
-  
+
     this._map = L.map("map").setView([-2.5, 117], 4.5);
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: '&copy; OpenStreetMap contributors',
     }).addTo(this._map);
-  
+
     stories.filter(s => s.lat && s.lon).forEach(story => {
       const marker = L.marker([story.lat, story.lon]).addTo(this._map);
       marker.bindPopup(`
@@ -118,7 +119,14 @@ export default class HomePage {
       `);
     });
   }
-  
+
+  _setupClearButton() {
+    document.getElementById('clear-indexeddb')?.addEventListener('click', async () => {
+      await StoryDB.deleteAllStories();
+      alert('Semua story lokal berhasil dihapus!');
+      window.location.reload();
+    });
+  }
 
   _createStoryItemTemplate(story, address) {
     return `
