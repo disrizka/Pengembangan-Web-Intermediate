@@ -1,5 +1,6 @@
 import { showFormattedDate } from "../../utils";
 import HomePresenter from "../../presenters/home-presenter.js";
+import NotificationButton from "./index.js"; // tombol notifikasi
 
 export default class HomePage {
   async render() {
@@ -7,7 +8,7 @@ export default class HomePage {
 
     return `
       <section class="container">
-        <h1>Story App</h1>
+       
         
         ${!isAuthenticated ? `
           <div class="welcome-section">
@@ -22,6 +23,7 @@ export default class HomePage {
           </div>
         ` : `
           <div class="story-container">
+            ${NotificationButton.render()} <!-- ⬅️ tombol notifikasi -->
             <h2>Stories</h2>
             <div id="story-list" class="story-list">
               <p id="loading">Loading stories...</p>
@@ -31,6 +33,7 @@ export default class HomePage {
               <h2>Story Locations</h2>
               <div id="map" class="map"></div>
             </div>
+          </div>
         `}
       </section>
     `;
@@ -41,6 +44,7 @@ export default class HomePage {
 
     if (isAuthenticated) {
       await this._loadStories();
+      NotificationButton.afterRender(); // ⬅️ aktifkan notifikasi
       await this._initMap();
     }
   }
@@ -80,33 +84,29 @@ export default class HomePage {
       });
     });
   }
-
   async _initMap() {
     const mapElement = document.getElementById("map");
-
-    // ✅ Cegah error map duplicate
-    const mapContainer = L.DomUtil.get("map");
-    if (mapContainer && mapContainer._leaflet_id) {
-      mapContainer._leaflet_id = null;
-    }
-
+  
+    // ✅ FIX: Hapus isi container map biar bisa di-reinit
+    mapElement.innerHTML = ''; // ⬅️ tambahkan ini untuk mencegah double init
+  
     const token = localStorage.getItem('token');
     if (!token) {
       window.location.hash = '#/login';
       return;
     }
-
+  
     const { error, stories } = await HomePresenter.getEnrichedStories(token);
     if (error || stories.length === 0) {
       mapElement.innerHTML = '<p class="map-message">No story locations available</p>';
       return;
     }
-
+  
     this._map = L.map("map").setView([-2.5, 117], 4.5);
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: '&copy; OpenStreetMap contributors',
     }).addTo(this._map);
-
+  
     stories.filter(s => s.lat && s.lon).forEach(story => {
       const marker = L.marker([story.lat, story.lon]).addTo(this._map);
       marker.bindPopup(`
@@ -118,7 +118,7 @@ export default class HomePage {
       `);
     });
   }
-
+  
 
   _createStoryItemTemplate(story, address) {
     return `
