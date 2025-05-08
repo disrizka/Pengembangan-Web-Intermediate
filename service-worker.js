@@ -1,13 +1,15 @@
-const CACHE_NAME = 'story-app-cache-v1';
+const CACHE_NAME = 'story-app-cache-v2';
+const FALLBACK_IMAGE = './images/logo.png';
+
 const STATIC_ASSETS = [
   './',
   './index.html',
   './app.bundle.js',
   './app.css',
-  './images/logo.png',
+  FALLBACK_IMAGE,
   './images/favicon.png',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
-  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
+  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
 ];
 
 self.addEventListener('install', (event) => {
@@ -20,11 +22,9 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) return caches.delete(key);
-        })
-      )
+      Promise.all(keys.map((key) => {
+        if (key !== CACHE_NAME) return caches.delete(key);
+      }))
     )
   );
   self.clients.claim();
@@ -37,18 +37,22 @@ self.addEventListener('fetch', (event) => {
     caches.match(event.request).then((cachedRes) => {
       if (cachedRes) return cachedRes;
 
-      return fetch(event.request).then((response) => {
-        const clone = response.clone();
+      return fetch(event.request).then((res) => {
+        const resClone = res.clone();
 
-        // Cache gambar story dari server Dicoding
+        // Cache gambar story
         if (event.request.url.includes('/images/stories/')) {
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, clone);
-          });
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, resClone));
         }
 
-        return response;
-      }).catch(() => caches.match('./'));
+        return res;
+      }).catch(() => {
+        if (event.request.destination === 'image') {
+          return caches.match(FALLBACK_IMAGE);
+        }
+
+        return caches.match('./');
+      });
     })
   );
 });

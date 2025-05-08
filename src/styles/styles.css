@@ -138,6 +138,26 @@ h1, h2 {
   cursor: not-allowed;
 }
 
+.btn-delete-story {
+  background-color: #ff4d4d;
+  color: #fff;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+.btn-delete-story:hover {
+  background-color: #e60000;
+}
+
+.btn-delete-story.hidden {
+  display: none;
+}
+
+
 
 /* ==========================
    STORY LIST

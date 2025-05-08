@@ -1,7 +1,7 @@
 import { showFormattedDate } from "../../utils";
 import HomePresenter from "../../presenters/home-presenter.js";
-import NotificationButton from "./index.js"; // tombol notifikasi
-import { StoryDB } from "../../utils/indexedDB.js"; // hapus IndexedDB
+import NotificationButton from "./index.js";
+import { StoryDB } from "../../utils/indexedDB.js";
 
 export default class HomePage {
   async render() {
@@ -23,8 +23,6 @@ export default class HomePage {
         ` : `
           <div class="story-container">
             ${NotificationButton.render()}
-            <button id="clear-indexeddb" class="btn btn-danger">Hapus Story Lokal</button>
-
             <h2>Stories</h2>
             <div id="story-list" class="story-list">
               <p id="loading">Loading stories...</p>
@@ -45,8 +43,7 @@ export default class HomePage {
 
     if (isAuthenticated) {
       await this._loadStories();
-      NotificationButton.afterRender(); // aktifkan notifikasi
-      this._setupClearButton(); // hapus IndexedDB
+      NotificationButton.afterRender();
       await this._initMap();
     }
   }
@@ -78,26 +75,29 @@ export default class HomePage {
       storyListElement.innerHTML += this._createStoryItemTemplate(story, story.address);
     }
 
-    const storyItems = storyListElement.querySelectorAll('.story-item');
-    storyItems.forEach(item => {
-      item.addEventListener('click', () => {
-        const storyId = item.dataset.id;
-        window.location.hash = `#/story/${storyId}`;
+    // ✅ Event: Delete per-card (offline only)
+    if (!navigator.onLine) {
+      const deleteButtons = document.querySelectorAll('.btn-delete-story');
+      deleteButtons.forEach((btn) => {
+        btn.classList.remove('hidden');
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const id = btn.getAttribute('data-id');
+          await StoryDB.deleteStory(id);
+          btn.closest('.story-item').remove();
+          alert('Story lokal berhasil dihapus!');
+        });
       });
-    });
+    }
   }
 
   async _initMap() {
     const mapElement = document.getElementById("map");
-    mapElement.innerHTML = ''; // cegah init ganda
+    mapElement.innerHTML = '';
 
     const token = localStorage.getItem('token');
-    if (!token) {
-      window.location.hash = '#/login';
-      return;
-    }
-
     const { error, stories } = await HomePresenter.getEnrichedStories(token);
+
     if (error || stories.length === 0) {
       mapElement.innerHTML = '<p class="map-message">No story locations available</p>';
       return;
@@ -120,14 +120,6 @@ export default class HomePage {
     });
   }
 
-  _setupClearButton() {
-    document.getElementById('clear-indexeddb')?.addEventListener('click', async () => {
-      await StoryDB.deleteAllStories();
-      alert('Semua story lokal berhasil dihapus!');
-      window.location.reload();
-    });
-  }
-
   _createStoryItemTemplate(story, address) {
     return `
       <article class="story-item" data-id="${story.id}">
@@ -135,18 +127,19 @@ export default class HomePage {
           src="${story.photoUrl}" 
           alt="Story by ${story.name}" 
           class="story-image"
-          onerror="this.onerror=null;this.src='https://placeholder.pics/svg/300x200/DEDEDE/555555/Image%20Not%20Available';"
-        >
+          onerror="this.onerror=null;this.src='images/logo.png';"
+        />
         <div class="story-content">
           <h3 class="story-title">${story.name}</h3>
           <p class="story-description">${story.description}</p>
           <small class="story-date">${showFormattedDate(story.createdAt)}</small>
-          ${story.lat && story.lon ? 
-            `<p class="story-location">
+          ${story.lat && story.lon ? `
+            <p class="story-location">
               <span class="location-icon">📍</span> 
               <span>${address}</span>
             </p>` : ''
           }
+          <button class="btn-delete-story hidden" data-id="${story.id}">🗑️ Hapus Lokal</button>
         </div>
       </article>
     `;

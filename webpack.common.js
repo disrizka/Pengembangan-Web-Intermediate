@@ -9,7 +9,7 @@ module.exports = {
   output: {
     filename: '[name].bundle.js',
     path: path.resolve(__dirname, 'dist'),
-    clean: true, // membersihkan dist sebelum build baru
+    clean: true,
   },
   module: {
     rules: [
@@ -31,7 +31,7 @@ module.exports = {
         },
         {
           from: path.resolve(__dirname, 'service-worker.js'),
-          to: '.', // ⬅️ ini artinya ke root /dist
+          to: '.',
         },
       ],
     }),
