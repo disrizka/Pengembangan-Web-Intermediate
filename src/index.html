@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="shortcut icon" href="favicon.png" />
+
+    <!-- Leaflet CSS -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <!-- Leaflet JS -->
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+
+    <title>Story App</title>
+  </head>
+  <body>
+    <a href="#main-content" class="skip-link">Skip to Content</a>
+    <header>
+      <div class="main-header container">
+        <a class="brand-name" href="#/">Story App</a>
+        
+        <nav id="navigation-drawer" class="navigation-drawer">
+          <ul id="nav-list" class="nav-list">
+            <li><a href="#/">Home</a></li>
+            <li id="add-story-menu" style="display: none;"><a href="#/add-story">Add Story</a></li>
+            <li id="logout-menu" style="display: none;"><a href="#" id="logout-button">Logout</a></li>
+          </ul>          
+        </nav>
+
+        <button id="drawer-button" class="drawer-button">☰</button>
+      </div>
+    </header>
+
+    <main id="main-content" class="main-content"></main>
+
+    <script>
+      function showMenusIfLoggedIn() {
+        const token = localStorage.getItem("token");
+        const logoutMenu = document.getElementById("logout-menu");
+        const addStoryMenu = document.getElementById("add-story-menu");
+    
+        if (token) {
+          logoutMenu.style.display = "inline-block";
+          addStoryMenu.style.display = "inline-block";
+        } else {
+          logoutMenu.style.display = "none";
+          addStoryMenu.style.display = "none";
+        }
+      }
+    
+      document.addEventListener("DOMContentLoaded", () => {
+        showMenusIfLoggedIn();
+      });
+    
+      document.addEventListener("click", (e) => {
+        if (e.target.id === "logout-button") {
+          localStorage.clear();
+          window.location.hash = "#/login";
+          location.reload();
+        }
+      });
+    
+      // Bisa diakses dari file JS lain
+      window.showMenusIfLoggedIn = showMenusIfLoggedIn;
+    </script>
+    
+  </body>
+</html>
